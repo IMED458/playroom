@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Gift
 } from 'lucide-react';
+import { handleRequest } from '../../core/app';
 
 interface PublicTournamentData {
   id: string;
@@ -79,11 +80,10 @@ export const PublicTournamentRegistrationView: React.FC<Props> = ({ tournamentId
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/tournaments/public/${tournamentId}`);
-      const data = await res.json();
+      const { status, data } = await handleRequest('GET', `/tournaments/public/${tournamentId}`);
 
-      if (!res.ok) {
-        throw new Error(data.error || 'ტურნირის მონაცემების ჩატვირთვა ვერ მოხერხდა.');
+      if (status !== 200) {
+        throw new Error(data?.error || 'ტურნირის მონაცემების ჩატვირთვა ვერ მოხერხდა.');
       }
 
       setTournament(data.tournament);
@@ -109,10 +109,9 @@ export const PublicTournamentRegistrationView: React.FC<Props> = ({ tournamentId
     try {
       setIsCheckingVoucher(true);
       setVoucherResult(null);
-      const res = await fetch(`/api/vouchers/check/${encodeURIComponent(voucherCode.trim())}`);
-      const data = await res.json();
+      const { status, data } = await handleRequest('GET', `/vouchers/check/${encodeURIComponent(voucherCode.trim())}`);
 
-      if (res.ok && data.valid) {
+      if (status === 200 && data.valid) {
         setVoucherResult({
           valid: true,
           message: 'ვაუჩერი მოქმედია!',
@@ -142,24 +141,18 @@ export const PublicTournamentRegistrationView: React.FC<Props> = ({ tournamentId
       setIsSubmitting(true);
       setSubmitError(null);
 
-      const res = await fetch(`/api/tournaments/public/${tournamentId}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: surname.trim() ? `${name.trim()} ${surname.trim()}` : name.trim(),
-          name: name.trim(),
-          surname: surname.trim(),
-          nickname: nickname.trim(),
-          phone: phone.trim(),
-          voucherCode: voucherCode.trim() || undefined,
-          notes: notes.trim() || undefined
-        })
+      const { status, data } = await handleRequest('POST', `/tournaments/public/${tournamentId}/register`, {
+        fullName: surname.trim() ? `${name.trim()} ${surname.trim()}` : name.trim(),
+        name: name.trim(),
+        surname: surname.trim(),
+        nickname: nickname.trim(),
+        phone: phone.trim(),
+        voucherCode: voucherCode.trim() || undefined,
+        notes: notes.trim() || undefined
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'რეგისტრაცია ვერ მოხერხდა.');
+      if (status !== 200) {
+        throw new Error(data?.error || 'რეგისტრაცია ვერ მოხერხდა.');
       }
 
       setRegistrationSuccess(data);
