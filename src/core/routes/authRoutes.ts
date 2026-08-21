@@ -1,5 +1,5 @@
-import { Router, Response } from 'express';
-import { queryOne, queryAll, execute, generateId } from '../db.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryOne, queryAll, execute, generateId } from '../db';
 import {
   AuthenticatedRequest,
   authMiddleware,
@@ -10,8 +10,8 @@ import {
   logAudit,
   requirePermission,
   revokeSessionToken
-} from '../auth.js';
-import { RoleName } from '../../src/types.js';
+} from '../auth';
+import { RoleName } from '../../types';
 
 export const authRouter = Router();
 

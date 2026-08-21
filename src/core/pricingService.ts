@@ -1,5 +1,5 @@
-import { queryAll, queryOne } from './db.js';
-import { DeviceCategory, DiscountType, ExtraPriceMode } from '../src/types.js';
+import { queryAll, queryOne } from './db';
+import { DeviceCategory, DiscountType, ExtraPriceMode } from '../types';
 
 export interface CalculatePriceParams {
   category: DeviceCategory;

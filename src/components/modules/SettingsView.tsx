@@ -28,6 +28,7 @@ import {
   Check
 } from 'lucide-react';
 import { sounds } from '../../lib/audio';
+import { DatabaseBackupPanel } from '../DatabaseBackupPanel';
 
 interface SettingsViewProps {
   onOpenWizard: () => void;
@@ -587,6 +588,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenWizard }) => {
           </div>
         </form>
       )}
+
+      {activeTab === 'PRICING' && <DatabaseBackupPanel />}
 
       {/* Tab: მოწყობილობების მართვა */}
       {activeTab === 'DEVICES' && (

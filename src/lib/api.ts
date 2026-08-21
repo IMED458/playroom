@@ -1,3 +1,5 @@
+import { handleRequest } from '../core/app';
+
 const TOKEN_KEY = 'playroom_token';
 
 export function getToken(): string | null {
@@ -12,46 +14,35 @@ export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/**
+ * მოთხოვნა მუშავდება ბრაუზერშივე — სერვერი არ არსებობს.
+ * ხელმოწერა შენარჩუნებულია, რომ კომპონენტების კოდი უცვლელი დარჩეს.
+ */
 export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {})
-  };
+  const method = (options.method || 'GET').toUpperCase();
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`/api${endpoint}`, {
-    ...options,
-    headers
-  });
-
-  const responseText = await response.text();
-  let data: any = null;
-
-  if (responseText) {
+  let body: any = undefined;
+  if (typeof options.body === 'string') {
     try {
-      data = JSON.parse(responseText);
+      body = JSON.parse(options.body);
     } catch {
-      data = { message: responseText };
+      body = options.body;
     }
-  } else {
-    data = {};
+  } else if (options.body) {
+    body = options.body;
   }
 
-  if (!response.ok) {
-    if (response.status === 401) {
+  const { status, data } = await handleRequest(method, endpoint, body, getToken());
+
+  if (status < 200 || status >= 300) {
+    if (status === 401) {
       removeToken();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-      }
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
-    throw new Error(data?.error || data?.message || `მოთხოვნის შეცდომა (${response.status})`);
+    throw new Error(data?.error || data?.message || `მოთხოვნის შეცდომა (${status})`);
   }
 
   return data as T;

@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, hashPassword, logAudit, requirePermission, requireRole } from '../auth.js';
-import { RoleName, User } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, hashPassword, logAudit, requirePermission, requireRole } from '../auth';
+import { RoleName, User } from '../../types';
 
 export const userRouter = Router();
 

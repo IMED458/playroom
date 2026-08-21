@@ -1,8 +1,8 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth.js';
-import { calculatePrice, roundUpToIncrement, getSetting, getHourlyRate } from '../pricingService.js';
-import { DeviceCategory, DeviceStatus, PaymentMethod, PaymentStatus, SessionStatus, Session } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth';
+import { calculatePrice, roundUpToIncrement, getSetting, getHourlyRate } from '../pricingService';
+import { DeviceCategory, DeviceStatus, PaymentMethod, PaymentStatus, SessionStatus, Session } from '../../types';
 
 export const sessionRouter = Router();
 

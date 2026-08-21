@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth.js';
-import { Device, DeviceCategory, DeviceStatus, Session } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth';
+import { Device, DeviceCategory, DeviceStatus, Session } from '../../types';
 
 export const deviceRouter = Router();
 

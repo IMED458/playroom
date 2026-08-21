@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, hashPassword, logAudit, requirePermission, requireRole } from '../auth.js';
-import { DeviceCategory, ExtraPriceMode, RoleName, SettingsState, ShiftDefinition } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, hashPassword, logAudit, requirePermission, requireRole } from '../auth';
+import { DeviceCategory, ExtraPriceMode, RoleName, SettingsState, ShiftDefinition } from '../../types';
 
 export const settingsRouter = Router();
 

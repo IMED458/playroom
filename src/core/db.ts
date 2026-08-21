@@ -1,47 +1,82 @@
 import initSqlJs, { Database } from 'sql.js';
-import fs from 'fs';
-import path from 'path';
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import bcrypt from 'bcryptjs';
+import { loadDatabaseFile, saveDatabaseFile } from './storage';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'playroom.sqlite');
+/**
+ * ლოკალური SQLite ბაზა, რომელიც მთლიანად ბრაუზერში მუშაობს (sql.js)
+ * და ინახება IndexedDB-ში. სერვერი არ არის საჭირო.
+ */
 
 let db: Database;
-
-export interface QueryResult<T = any> {
-  columns: string[];
-  values: any[][];
-}
+let saveTimer: number | undefined;
 
 export async function getDb(): Promise<Database> {
   if (db) return db;
 
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+  const SQL = await initSqlJs({ locateFile: () => sqlWasmUrl });
+  const stored = await loadDatabaseFile();
 
-  const SQL = await initSqlJs();
-
-  if (fs.existsSync(DB_FILE)) {
-    const fileBuffer = fs.readFileSync(DB_FILE);
-    db = new SQL.Database(fileBuffer);
-  } else {
-    db = new SQL.Database();
-  }
+  db = stored ? new SQL.Database(stored) : new SQL.Database();
 
   initSchema();
-  saveDb();
+  await flushDb();
   return db;
 }
 
 export const initDatabase = getDb;
 
+export function isReady(): boolean {
+  return !!db;
+}
 
+/** ბაზის სრული ექსპორტი (სარეზერვო ასლისთვის) */
+export function exportDb(): Uint8Array {
+  if (!db) throw new Error('ბაზა ჯერ არ არის ინიციალიზებული.');
+  return db.export();
+}
+
+/** ბაზის აღდგენა სარეზერვო ასლიდან */
+export async function importDb(data: Uint8Array): Promise<void> {
+  const SQL = await initSqlJs({ locateFile: () => sqlWasmUrl });
+  db = new SQL.Database(data);
+  initSchema();
+  await flushDb();
+}
+
+/** ბაზის სრული წაშლა და თავიდან შექმნა */
+export async function resetDb(): Promise<void> {
+  const SQL = await initSqlJs({ locateFile: () => sqlWasmUrl });
+  db = new SQL.Database();
+  initSchema();
+  await flushDb();
+}
+
+async function flushDb(): Promise<void> {
+  if (!db) return;
+  await saveDatabaseFile(db.export());
+}
+
+/**
+ * ჩაწერები ჯგუფდება — IndexedDB-ში შენახვა ხდება მოკლე დაყოვნებით,
+ * რომ ყოველი მოთხოვნისას მთელი ფაილის სერიალიზაცია არ მოხდეს.
+ */
 export function saveDb(): void {
   if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_FILE, buffer);
+  if (saveTimer !== undefined) window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => {
+    saveTimer = undefined;
+    void flushDb();
+  }, 250);
+}
+
+/** გვერდის დახურვამდე დაუყოვნებლივ ინახება */
+export async function saveDbNow(): Promise<void> {
+  if (saveTimer !== undefined) {
+    window.clearTimeout(saveTimer);
+    saveTimer = undefined;
+  }
+  await flushDb();
 }
 
 export function queryAll<T = any>(sql: string, params: any[] = []): T[] {
@@ -67,7 +102,7 @@ export function execute(sql: string, params: any[] = []): { changes: number } {
   if (!db) throw new Error('Database not initialized');
   db.run(sql, params);
   saveDb();
-  const res = db.exec("SELECT changes() AS changes");
+  const res = db.exec('SELECT changes() AS changes');
   const changes = res.length > 0 && res[0].values.length > 0 ? (res[0].values[0][0] as number) : 1;
   return { changes };
 }
@@ -409,6 +444,8 @@ function initSchema(): void {
   ensureDefaultSettings();
 }
 
+export const INITIAL_ADMIN_PASSWORD = 'AdminPlayRoom2026!';
+
 export const ALL_PERMISSIONS = [
   'users.view', 'users.create', 'users.edit', 'users.delete',
   'sessions.create', 'sessions.edit', 'sessions.finish', 'sessions.cancel', 'sessions.delete',
@@ -516,7 +553,7 @@ function seedInitialData(): void {
 
   // Initial Users (Super Admin, Operator, Finance, Employee)
   const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync('AdminPlayRoom2026!', salt);
+  const passwordHash = bcrypt.hashSync(INITIAL_ADMIN_PASSWORD, salt);
 
   const now = new Date().toISOString();
 

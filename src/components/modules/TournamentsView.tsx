@@ -136,9 +136,13 @@ export const TournamentsView: React.FC = () => {
   const currentTourneyId = currentTourney?.id;
   const currentParticipants = selectedTournament?.participants || [];
 
+  /** საჯარო ბმული იგება მიმდინარე მისამართიდან — მუშაობს ნებისმიერ ჰოსტინგზე */
+  const publicRegistrationUrl = (tId: string) =>
+    `${window.location.href.split('?')[0].split('#')[0]}?tournamentReg=${tId}`;
+
   const handleCopyLink = (tId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    const url = `${window.location.origin}/?tournamentReg=${tId}`;
+    const url = publicRegistrationUrl(tId);
     navigator.clipboard.writeText(url).then(() => {
       setCopiedId(tId);
       sounds.playSuccessTone();
@@ -151,7 +155,7 @@ export const TournamentsView: React.FC = () => {
 
   const handleOpenPublicForm = (tId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    window.open(`/?tournamentReg=${tId}`, '_blank');
+    window.open(publicRegistrationUrl(tId), '_blank');
   };
 
   const handleCreateTournament = async (e: React.FormEvent) => {
@@ -439,7 +443,7 @@ export const TournamentsView: React.FC = () => {
                     <Link className="w-3.5 h-3.5" /> საჯარო სარეგისტრაციო ბმული:
                   </span>
                   <p className="text-xs text-slate-400 font-mono break-all select-all">
-                    {window.location.origin}/?tournamentReg={currentTourney.id}
+                    {publicRegistrationUrl(currentTourney.id)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

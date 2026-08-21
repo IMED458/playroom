@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth.js';
-import { DailyClosure, FinancialStats, PaymentMethod, Transaction } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, logAudit, requirePermission } from '../auth';
+import { DailyClosure, FinancialStats, PaymentMethod, Transaction } from '../../types';
 
 export const financeRouter = Router();
 

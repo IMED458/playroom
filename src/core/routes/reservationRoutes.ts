@@ -1,7 +1,7 @@
-import { Router, Response } from 'express';
-import { queryAll, queryOne, execute, generateId } from '../db.js';
-import { AuthenticatedRequest, authMiddleware, logAudit } from '../auth.js';
-import { Reservation, ReservationStatus, Device, DeviceStatus, SessionStatus, PaymentMethod, PaymentStatus } from '../../src/types.js';
+import { Router, AppResponse as Response } from '../express';
+import { queryAll, queryOne, execute, generateId } from '../db';
+import { AuthenticatedRequest, authMiddleware, logAudit } from '../auth';
+import { Reservation, ReservationStatus, Device, DeviceStatus, SessionStatus, PaymentMethod, PaymentStatus } from '../../types';
 
 export const reservationRouter = Router();
 

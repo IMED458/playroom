@@ -1,10 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import { AppRequest as Request, AppResponse as Response, NextFn as NextFunction } from './express';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { queryOne, queryAll, execute, generateId } from './db.js';
-import { RoleName, User } from '../src/types.js';
+import { queryOne, execute, generateId } from './db';
+import { RoleName, User } from '../types';
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'playroom-super-secret-key-2026';
+/**
+ * სესიის ტოკენები ბრაუზერშივე გენერირდება.
+ * კრიპტოგრაფიული ხელმოწერა აზრს კარგავს, რადგან სერვერი არ არსებობს —
+ * წვდომის რეალური საზღვარი თავად მოწყობილობაა (იხ. README).
+ */
 
 // In-memory active tokens map: token -> { userId, expiresAt }
 const activeTokens = new Map<string, { userId: string; expiresAt: number }>();
@@ -23,13 +26,15 @@ export function comparePassword(plainText: string, hash: string): boolean {
   return bcrypt.compareSync(plainText, hash);
 }
 
+function randomHex(bytes: number): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function createSessionToken(userId: string): string {
-  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
-  const randomSalt = crypto.randomBytes(8).toString('hex');
-  const payload = `${userId}.${expiresAt}.${randomSalt}`;
-  const signature = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
-  const token = `${payload}.${signature}`;
-  
+  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 დღე
+  const token = `${userId}.${expiresAt}.${randomHex(8)}`;
   activeTokens.set(token, { userId, expiresAt });
   return token;
 }
@@ -54,30 +59,14 @@ export function getUserFromToken(token?: string): User | null {
     }
     userId = cached.userId;
   } else {
-    // 2. Validate signed token format: <userId>.<expiresAt>.<randomSalt>.<signature>
+    // ტოკენის სტრუქტურის შემოწმება: <userId>.<expiresAt>.<random>
     const parts = token.split('.');
-    if (parts.length === 4) {
-      const [uId, expStr, salt, sig] = parts;
-      const exp = parseInt(expStr, 10);
+    if (parts.length >= 3) {
+      const uId = parts[0];
+      const exp = parseInt(parts[1], 10);
       if (!isNaN(exp) && Date.now() <= exp) {
-        const payload = `${uId}.${expStr}.${salt}`;
-        const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
-        if (sig === expectedSig) {
-          userId = uId;
-          activeTokens.set(token, { userId, expiresAt: exp });
-        }
-      }
-    } else if (parts.length === 3) {
-      // Legacy 3-part format: <userId>.<expiresAt>.<signature>
-      const [uId, expStr, sig] = parts;
-      const exp = parseInt(expStr, 10);
-      if (!isNaN(exp) && Date.now() <= exp) {
-        const payload = `${uId}.${expStr}`;
-        const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
-        if (sig === expectedSig) {
-          userId = uId;
-          activeTokens.set(token, { userId, expiresAt: exp });
-        }
+        userId = uId;
+        activeTokens.set(token, { userId: uId, expiresAt: exp });
       }
     }
   }
